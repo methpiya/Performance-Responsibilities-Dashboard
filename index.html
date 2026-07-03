@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(255, 255, 255, 0.5);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.3);
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(219, 234, 254, 0.7) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, rgba(254, 215, 170, 0.5) 0, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(221, 214, 254, 0.6) 0, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+
+        header {
+            grid-column: span 12;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+        }
+
+        .title h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #1e40af, #6b21a8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .title p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* KPI Cards */
+        .kpi-card {
+            grid-column: span 3;
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .kpi-card { grid-column: span 6; }
+        }
+        @media (max-width: 640px) {
+            .kpi-card { grid-column: span 12; }
+        }
+
+        .kpi-icon {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
+        }
+
+        .kpi-icon.blue { background: rgba(59, 130, 246, 0.15); color: #2563eb; }
+        .kpi-icon.green { background: rgba(16, 185, 129, 0.15); color: #059669; }
+        .kpi-icon.yellow { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+        .kpi-icon.red { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+
+        .kpi-details h3 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--text-main);
+        }
+
+        .kpi-details p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* Charts Section */
+        .chart-card {
+            grid-column: span 4;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 1200px) {
+            .chart-card { grid-column: span 6; }
+        }
+        
+        @media (max-width: 768px) {
+            .chart-card { grid-column: span 12; }
+        }
+
+        .chart-card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: var(--text-main);
+        }
+        
+        .chart-card h2 i {
+            color: var(--accent);
+        }
+
+        .chart-container {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        /* Details Section */
+        .details-card {
+            grid-column: span 6;
+        }
+        
+        @media (max-width: 1024px) {
+            .details-card { grid-column: span 12; }
+        }
+
+        .details-card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid rgba(15, 23, 42, 0.05);
+            padding-bottom: 0.8rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .details-card h2 i {
+            color: var(--accent);
+        }
+
+        .timeline-item {
+            display: flex;
+            margin-bottom: 1.2rem;
+            position: relative;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 24px;
+            bottom: -12px;
+            width: 2px;
+            background: #cbd5e1;
+        }
+        
+        .timeline-item:last-child::before {
+            display: none;
+        }
+
+        .timeline-marker {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            margin-top: 6px;
+            margin-right: 1.2rem;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        .timeline-content h4 {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 1.05rem;
+        }
+        
+        .timeline-content p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+        
+        .timeline-date {
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 700;
+            margin-bottom: 0.1rem;
+        }
+
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+        
+        .tech-tag {
+            background: rgba(15, 23, 42, 0.04);
+            color: var(--text-main);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .tech-tag:hover {
+            background: rgba(15, 23, 42, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .tech-tag-special-1 {
+            background: rgba(139, 92, 246, 0.1);
+            color: #6d28d9;
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+        .tech-tag-special-1:hover {
+            background: rgba(139, 92, 246, 0.15);
+        }
+
+        .tech-tag-special-2 {
+            background: rgba(239, 68, 68, 0.1);
+            color: #b91c1c;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+        .tech-tag-special-2:hover {
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .highlight-list {
+            list-style-type: none;
+        }
+
+        .highlight-list li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.8rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .highlight-list li::before {
+            content: '✨';
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-size: 0.9rem;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header>
+            <div class="title">
+                <h1>Performance & Responsibilities Dashboard</h1>
+                <p>แดชบอร์ดสรุปผลการปฏิบัติงานและหน้าที่ความรับผิดชอบ</p>
+            </div>
+            <div>
+                <span class="tech-tag" style="background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: none;"><i class="fas fa-calendar-alt" style="color: var(--accent);"></i> ข้อมูลอัปเดต: มิถุนายน 2569</span>
+            </div>
+        </header>
+
+        <!-- KPIs -->
+        <div class="glass-card kpi-card">
+            <div class="kpi-icon blue"><i class="fas fa-tasks"></i></div>
+            <div class="kpi-details">
+                <h3>13</h3>
+                <p>ภาระงานทั้งหมด</p>
+            </div>
+        </div>
+        <div class="glass-card kpi-card">
+            <div class="kpi-icon green"><i class="fas fa-check-circle"></i></div>
+            <div class="kpi-details">
+                <h3>7</h3>
+                <p>ดำเนินการแล้ว / ต่อเนื่อง</p>
+            </div>
+        </div>
+        <div class="glass-card kpi-card">
+            <div class="kpi-icon yellow"><i class="fas fa-spinner"></i></div>
+            <div class="kpi-details">
+                <h3>4</h3>
+                <p>อยู่ระหว่างดำเนินการ</p>
+            </div>
+        </div>
+        <div class="glass-card kpi-card">
+            <div class="kpi-icon red"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="kpi-details">
+                <h3>2</h3>
+                <p>รอระบบสารสนเทศ</p>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="glass-card chart-card">
+            <h2><i class="fas fa-chart-pie"></i> สถานะการดำเนินงาน (Task Status)</h2>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-card chart-card">
+            <h2><i class="fas fa-chart-bar"></i> ภาระงานตามหมวดหมู่ (Tasks by Category)</h2>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-card chart-card">
+            <h2><i class="fas fa-graduation-cap"></i> สถิติการอบรมพัฒนาตนเอง</h2>
+            <div class="chart-container">
+                <canvas id="trainingChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Details -->
+        <div class="glass-card details-card">
+            <h2><i class="fas fa-calendar-check"></i> กิจกรรมและการประชุมสำคัญ (Key Events)</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">20 พฤษภาคม 2569</div>
+                        <h4>ทำบุญตักบาตรวันสถาปนาคณะ & PT Quality Day</h4>
+                        <p>จัดเตรียมสถานที่, อำนวยความสะดวก, แบบประเมินออนไลน์</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">27 พฤษภาคม 2569</div>
+                        <h4>การประชุมอาจารย์ ครั้งที่ 5</h4>
+                        <p>จัดทำร่างรายงานการประชุม และนำเสนอเพื่อลงนาม</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">9 มิถุนายน 2569</div>
+                        <h4>สัมมนาผู้บริหาร ประจำปี 2569</h4>
+                        <p>ดูแลจุดลงทะเบียน, อุปกรณ์ประชุม, แบบประเมินผ่านระบบ</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">24 มิถุนายน 2569</div>
+                        <h4>การประชุมอาจารย์ ครั้งที่ 6</h4>
+                        <p>ส่งหนังสือเชิญประชุม, จัดเตรียม Webex, ร่างรายงานการประชุม</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">25 มิถุนายน 2569</div>
+                        <h4>การประชุมสำนักงานคณบดี ครั้งที่ 2/2569</h4>
+                        <p>จองห้อง 505, ออกแบบระบบแจ้งเตือนผ่าน Google Apps Script</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card details-card" style="display: flex; flex-direction: column;">
+            <h2><i class="fas fa-laptop-code"></i> ระบบสารสนเทศและเทคโนโลยีที่ใช้งาน</h2>
+            <p style="margin-bottom: 1.2rem; color: var(--text-muted); font-size: 0.95rem;">
+                การประยุกต์ใช้เทคโนโลยีเพื่อเพิ่มประสิทธิภาพการทำงานและปรับปรุงระบบงาน
+            </p>
+            <div class="tech-tags">
+                <span class="tech-tag"><i class="fas fa-video" style="color: #0ea5e9;"></i> Cisco Webex</span>
+                <span class="tech-tag"><i class="fas fa-video" style="color: #6366f1;"></i> MS Teams & Zoom</span>
+                <span class="tech-tag"><i class="fab fa-google" style="color: #fbbc05;"></i> Google Apps Script</span>
+                <span class="tech-tag"><i class="fab fa-google" style="color: #4285f4;"></i> Google Forms & Docs</span>
+                <span class="tech-tag"><i class="fab fa-google-drive" style="color: #34a853;"></i> Google Drive (DB)</span>
+                <span class="tech-tag tech-tag-special-1"><i class="fas fa-rocket"></i> Antigravity Dashboard</span>
+                <span class="tech-tag tech-tag-special-2"><i class="fas fa-cogs"></i> ระบบ e-office (รอสิทธิ์)</span>
+            </div>
+            
+            <h3 style="margin-top: 1.5rem; margin-bottom: 0.8rem; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">ผลงานโดดเด่นด้านการพัฒนาระบบ</h3>
+            <ul class="highlight-list">
+                <li>พัฒนา <strong>Interactive Survey Dashboard</strong> ร่วมกับโปรแกรม Antigravity สำหรับงาน PTMU Quality Day</li>
+                <li>เขียน <strong>Google Apps Script</strong> สร้างระบบส่งวาระการประชุมทางอีเมลอัตโนมัติ</li>
+            </ul>
+        </div>
+        
+        <!-- Training Section -->
+        <div class="glass-card details-card" style="grid-column: span 12; margin-top: 0.5rem;">
+            <h2><i class="fas fa-graduation-cap"></i> การเข้าร่วมการอบรมและพัฒนาตนเอง (Training & Development)</h2>
+            <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px; background: rgba(255, 255, 255, 0.5); padding: 1.5rem; border-radius: 1rem; border: 1px solid rgba(15, 23, 42, 0.05);">
+                    <h3 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 0.8rem; font-weight: 600;"><i class="fas fa-robot" style="color: #6366f1;"></i> ทักษะด้าน AI และ Automation (3 หลักสูตร)</h3>
+                    <ul class="highlight-list">
+                        <li>AI Excel to Dashboard (22 พ.ค. 2569)</li>
+                        <li>Workflow Automation (19 มิ.ย. 2569)</li>
+                        <li>AI Agents in Action (4 มิ.ย. 2569)</li>
+                    </ul>
+                </div>
+                <div style="flex: 1; min-width: 300px; background: rgba(255, 255, 255, 0.5); padding: 1.5rem; border-radius: 1rem; border: 1px solid rgba(15, 23, 42, 0.05);">
+                    <h3 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 0.8rem; font-weight: 600;"><i class="fas fa-gavel" style="color: #d97706;"></i> กฎหมายปกครองและการปฏิบัติราชการ (10 หลักสูตร)</h3>
+                    <ul class="highlight-list">
+                        <li>อบรมผ่านระบบ e-learning และ ALL Cloud ของศาลปกครอง (พ.ค. - มิ.ย. 2569)</li>
+                        <li>ครอบคลุมหัวข้อ วินัยข้าราชการ, การจัดการข้อมูล, สัญญาทางปกครอง และความรับผิดทางละเมิด</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart Configs
+        Chart.defaults.color = '#475569';
+        Chart.defaults.font.family = 'Kanit';
+        Chart.defaults.font.size = 13;
+
+        // Status Chart
+        const ctxStatus = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: {
+                labels: ['ดำเนินการแล้ว', 'อยู่ระหว่างดำเนินการ', 'รอระบบ (Pending)'],
+                datasets: [{
+                    data: [7, 4, 2],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(239, 68, 68, 0.8)'
+                    ],
+                    borderColor: [
+                        '#ffffff',
+                        '#ffffff',
+                        '#ffffff'
+                    ],
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+
+        // Category Chart
+        const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+        
+        // Add gradient for bars
+        const gradientBlue = ctxCategory.createLinearGradient(0, 0, 0, 400);
+        gradientBlue.addColorStop(0, 'rgba(59, 130, 246, 0.9)');
+        gradientBlue.addColorStop(1, 'rgba(37, 99, 235, 0.6)');
+
+        const gradientPurple = ctxCategory.createLinearGradient(0, 0, 0, 400);
+        gradientPurple.addColorStop(0, 'rgba(168, 85, 247, 0.9)');
+        gradientPurple.addColorStop(1, 'rgba(147, 51, 234, 0.6)');
+
+        const gradientPink = ctxCategory.createLinearGradient(0, 0, 0, 400);
+        gradientPink.addColorStop(0, 'rgba(236, 72, 153, 0.9)');
+        gradientPink.addColorStop(1, 'rgba(219, 39, 119, 0.6)');
+
+        const gradientCyan = ctxCategory.createLinearGradient(0, 0, 0, 400);
+        gradientCyan.addColorStop(0, 'rgba(6, 182, 212, 0.9)');
+        gradientCyan.addColorStop(1, 'rgba(8, 145, 178, 0.6)');
+
+        const gradientOrange = ctxCategory.createLinearGradient(0, 0, 0, 400);
+        gradientOrange.addColorStop(0, 'rgba(249, 115, 22, 0.9)');
+        gradientOrange.addColorStop(1, 'rgba(194, 65, 12, 0.6)');
+
+        const gradientGreen = ctxCategory.createLinearGradient(0, 0, 0, 400);
+        gradientGreen.addColorStop(0, 'rgba(16, 185, 129, 0.9)');
+        gradientGreen.addColorStop(1, 'rgba(5, 150, 105, 0.6)');
+
+        new Chart(ctxCategory, {
+            type: 'bar',
+            data: {
+                labels: ['บริหารการประชุม', 'พิธีการ/กิจกรรม', 'ธุรการ/สารบรรณ', 'สนับสนุนผู้บริหาร'],
+                datasets: [{
+                    label: 'จำนวนรายการ',
+                    data: [5, 3, 3, 2],
+                    backgroundColor: [
+                        gradientBlue,
+                        gradientPurple,
+                        gradientPink,
+                        gradientCyan
+                    ],
+                    borderWidth: 0,
+                    borderRadius: 8,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: 'rgba(15, 23, 42, 0.05)',
+                            drawBorder: false
+                        },
+                        border: { display: false }
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false
+                        },
+                        border: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleFont: { size: 14, family: 'Kanit' },
+                        bodyFont: { size: 13, family: 'Kanit' },
+                        padding: 12,
+                        cornerRadius: 8
+                    }
+                }
+            }
+        });
+
+        // Training Chart
+        const ctxTraining = document.getElementById('trainingChart').getContext('2d');
+        new Chart(ctxTraining, {
+            type: 'bar',
+            data: {
+                labels: ['อบรมด้าน AI', 'อบรมด้านกฎหมาย'],
+                datasets: [{
+                    label: 'จำนวนหลักสูตร',
+                    data: [3, 10],
+                    backgroundColor: [
+                        gradientOrange,
+                        gradientGreen
+                    ],
+                    borderWidth: 0,
+                    borderRadius: 8,
+                    barPercentage: 0.5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 2 },
+                        grid: { color: 'rgba(15, 23, 42, 0.05)', drawBorder: false },
+                        border: { display: false }
+                    },
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        border: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleFont: { size: 14, family: 'Kanit' },
+                        bodyFont: { size: 13, family: 'Kanit' },
+                        padding: 12,
+                        cornerRadius: 8
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
